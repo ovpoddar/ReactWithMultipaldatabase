@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Server.Entityes;
+using Server.Manager;
 using Server.Model;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,21 +16,22 @@ namespace Server.Controllers
     public class FormDatasController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly IFormDataManager _manager;
 
-        public FormDatasController(ApplicationDbContext context)
+        public FormDatasController(ApplicationDbContext context, IFormDataManager manager)
         {
             _context = context;
+            _manager = manager;
         }
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<FormData>>> GetForms() =>
-            await _context.Forms.ToListAsync();
+            await _manager.GetAll();
 
         [HttpGet("{id}")]
         public async Task<ActionResult<FormData>> GetFormData(int id)
         {
-            var formData = await _context.Forms.FindAsync(id);
-
+            var formData = await _manager.GetForm(id);
             return formData == null ? NotFound() : formData;
         }
 
@@ -59,23 +61,16 @@ namespace Server.Controllers
         [HttpPost]
         public async Task<ActionResult> PostFormData(FormData formData)
         {
-            _context.Forms.Add(formData);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetFormData", new { id = formData.Id }, formData);
+            if (!ModelState.IsValid)
+                return BadRequest();
+            var result = await _manager.Add(formData);
+            return CreatedAtAction("GetFormData", new { id = result.Id }, result);
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteFormData(int id)
-        {
-            var formData = await _context.Forms.FindAsync(id);
-            if (formData == null)
-                return NotFound();
-
-            _context.Forms.Remove(formData);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
+        public async Task<IActionResult> DeleteFormData(int id) =>
+            await _manager.Remove(id)
+                ? NoContent()
+                : NotFound();
     }
 }

@@ -5,7 +5,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
+using Server.Manager;
 using Server.Model;
+using Server.Repository;
 
 namespace Server
 {
@@ -25,6 +27,8 @@ namespace Server
             services.AddControllers();
             services.AddDbContext<ApplicationDbContext>(builder => builder.UseSqlServer(Configuration.GetConnectionString("DefaultConnection"),
                 sqlOption => sqlOption.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.GetName().Name)));
+            services.AddTransient<IFormReposotory, FormSqlReposotory>();
+            services.AddTransient<IFormDataManager, FormDataManager>();
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "Server", Version = "v1" });
